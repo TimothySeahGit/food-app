@@ -12,6 +12,13 @@ import Joi from "joi-browser";
 class RestaurantForm extends Component {
   state = {
     cuisines: getCuisines(),
+    error: {
+      name: "",
+      address: "",
+      cuisineId: "",
+      averagePrice: "",
+      imageUrl: ""
+    },
     data: {
       name: "",
       address: "",
@@ -39,9 +46,18 @@ class RestaurantForm extends Component {
       .required()
   };
 
+  validateField = (inputName, value) => {
+    //get schema for this field
+    const schema = { [inputName]: this.schema[inputName] };
+    //call Joi validate with that schema and value
+    const result = Joi.validate({ [inputName]: value }, schema);
+    return result.error;
+  };
+
   validate = () => {
     const opt = { abortEarly: false };
     const result = Joi.validate(this.state.data, this.schema, opt);
+    // console.log(result);
     return result.error;
   };
 
@@ -63,7 +79,7 @@ class RestaurantForm extends Component {
 
     const { cuisineId, averagePrice } = this.state.data;
     const isInvalidForm = this.validate();
-    console.log(isInvalidForm);
+    // console.log(isInvalidForm);
     if (isInvalidForm) return;
     const cuisine = getCuisines().find(cuisine => cuisine._id === cuisineId);
 
@@ -77,40 +93,25 @@ class RestaurantForm extends Component {
   };
 
   handleChange = ({ currentTarget: input }) => {
+    const copy = { ...this.state.error };
+    const isInvalid = this.validateField(input.name, input.value);
+    // console.log(isInvalid);
+    if (isInvalid) {
+      copy[input.name] = isInvalid.details[0].message;
+      //set error message
+      this.setState({ error: copy });
+    } else {
+      copy[input.name] = "";
+      this.setState({ error: copy });
+    }
+
     const data = { ...this.state.data };
     data[input.name] = input.value;
     this.setState({ data });
   };
 
   render() {
-    // const schema = {
-    //   name: Joi.string().required(),
-    //   address: Joi.string().required(),
-    //   openingTime: Joi.string().required(),
-    //   closingTime: Joi.string().required(),
-    //   cuisineId: Joi.string().required(),
-    //   averagePrice: Joi.number()
-    //     .integer()
-    //     .min(1)
-    //     .required(),
-    //   imageUrl: Joi.string()
-    //     .uri()
-    //     .required()
-    // };
-    // const sample = {
-    //   name: "a",
-    //   address: "b",
-    //   openingTime: "c",
-    //   closingTime: "d",
-    //   cuisineId: "d",
-    //   averagePrice: "-1",
-    //   imageUrl: "a"
-    // };
-    // const opt = { abortEarly: false };
-    // const result = Joi.validate(sample, schema, opt);
-    // console.log(result);
-
-    const { cuisines } = this.state;
+    const { cuisines, error } = this.state;
     const {
       name,
       address,
@@ -129,12 +130,14 @@ class RestaurantForm extends Component {
             label="Name"
             onChange={this.handleChange}
             value={name}
+            error={error.name}
           />
           <Input
             name="address"
             label="Address"
             onChange={this.handleChange}
             value={address}
+            error={error.address}
           />
           <TimeInput
             name="openingTime"
@@ -154,6 +157,7 @@ class RestaurantForm extends Component {
             options={cuisines}
             onChange={this.handleChange}
             value={cuisineId}
+            error={error.cuisineId}
           />
           <Input
             name="averagePrice"
@@ -161,12 +165,14 @@ class RestaurantForm extends Component {
             type="number"
             onChange={this.handleChange}
             value={averagePrice}
+            error={error.averagePrice}
           />
           <Input
             name="imageUrl"
             label="Image URL"
             onChange={this.handleChange}
             value={imageUrl}
+            error={error.imageUrl}
           />
           <button className="btn btn-primary btn-sm" disabled={this.validate()}>
             Save
